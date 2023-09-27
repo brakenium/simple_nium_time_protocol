@@ -1,12 +1,14 @@
 mod ntp_packet;
-mod macros;
 
-use std::net::SocketAddr;
+use crate::ntp_packet::{
+    ExternalReferenceSource, LeapIndicator, NtpMessage, NtpTimestamp, ReferenceIdentifier,
+    Stratum, VersionNumber,
+};
 use bytes::BytesMut;
-use chrono::{DateTime, Duration, TimeZone, Utc};
+use chrono::{TimeZone, Utc};
+use std::net::SocketAddr;
 use tokio::net::UdpSocket;
-use tracing::{debug, error, info, Level, trace};
-use crate::ntp_packet::{ExternalReferenceSource, LeapIndicator, Mode, NtpMessage, NtpTimestamp, ReferenceIdentifier, Stratum, VersionNumber};
+use tracing::{debug, error, info, trace, Level};
 
 fn tracing() {
     tracing_subscriber::fmt()

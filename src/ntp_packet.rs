@@ -1,9 +1,9 @@
+use anyhow::bail;
+use bytes::{Buf, BytesMut};
+use chrono::{DateTime, Duration, LocalResult, TimeZone, Utc};
 use std::net::Ipv4Addr;
 use std::str;
 use std::str::FromStr;
-use anyhow::bail;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
-use chrono::{DateTime, Duration, LocalResult, TimeZone, Utc};
 use strum::{AsRefStr, EnumString, FromRepr};
 use thiserror::Error;
 use tracing::trace;
@@ -144,7 +144,12 @@ impl TryFrom<&mut BytesMut> for NtpTimestamp {
 
         let timestamp = Utc.timestamp_opt(seconds_unix_format, nano_seconds as u32);
 
-        trace!("Seconds_unix: {}, seconds_fraction: {} Timestamp: {:?}", seconds_unix_format, nano_seconds, timestamp);
+        trace!(
+            "Seconds_unix: {}, seconds_fraction: {} Timestamp: {:?}",
+            seconds_unix_format,
+            nano_seconds,
+            timestamp
+        );
 
         match timestamp {
             LocalResult::Single(timestamp) => Ok(NtpTimestamp(timestamp)),
@@ -172,7 +177,12 @@ impl NtpTimestamp {
         bytes[..4].copy_from_slice(&timestamp_bytes);
         bytes[4..].copy_from_slice(&fraction_bytes[..4]);
 
-        trace!("Timestamp: {:?} Fraction: {:?} Bytes: {:?}", timestamp_bytes, fraction_bytes, bytes);
+        trace!(
+            "Timestamp: {:?} Fraction: {:?} Bytes: {:?}",
+            timestamp_bytes,
+            fraction_bytes,
+            bytes
+        );
 
         bytes
     }
@@ -193,6 +203,22 @@ pub struct NtpMessage {
     pub originate_timestamp: Option<NtpTimestamp>,
     pub receive_timestamp: Option<NtpTimestamp>,
     pub transmit_timestamp: NtpTimestamp,
+}
+
+#[derive(Debug)]
+pub struct NtpServerResponse {
+    leap_indicator: LeapIndicator,
+    version_number: VersionNumber,
+    stratum: Stratum,
+    poll_interval: u8,
+    precision: i8,
+    root_delay: i32,
+    root_dispersion: u32,
+    reference_identifier: ReferenceIdentifier,
+    reference_timestamp: NtpTimestamp,
+    originate_timestamp: Option<NtpTimestamp>,
+    receive_timestamp: NtpTimestamp,
+    transmit_timestamp: Option<NtpTimestamp>,
 }
 
 fn pad_int(mut integer: isize, expected_digits: i32) -> isize {
@@ -226,20 +252,29 @@ impl NtpMessage {
         bytes[8..12].copy_from_slice(&root_dispersion.to_be_bytes());
 
         match self.reference_identifier {
-            Some(ReferenceIdentifier::KissODeath(kod)) => bytes[12..16].copy_from_slice(kod.as_ref().as_bytes()),
+            Some(ReferenceIdentifier::KissODeath(kod)) => {
+                bytes[12..16].copy_from_slice(kod.as_ref().as_bytes())
+            }
             Some(ReferenceIdentifier::Primary(Some(rid))) => {
                 let reference_source = rid.as_ref();
                 let diff = 4 - reference_source.len();
-                bytes[12..16-diff].copy_from_slice(reference_source.as_ref());
-            },
+                bytes[12..16 - diff].copy_from_slice(reference_source.as_ref());
+            }
             Some(ReferenceIdentifier::Primary(None)) => bytes[12..16].copy_from_slice(&[0; 4]),
-            Some(ReferenceIdentifier::IPv4Secondary(ip)) => bytes[12..16].copy_from_slice(&ip.octets()),
-            Some(ReferenceIdentifier::IPv6AndOSISecondary(ip_osi)) => bytes[12..16].copy_from_slice(&ip_osi.to_be_bytes()),
-            Some(ReferenceIdentifier::UnknownIpVersion(ip)) => bytes[12..16].copy_from_slice(&ip.to_be_bytes()),
-            Some(ReferenceIdentifier::ReservedStratum(stratum)) => bytes[12..16].copy_from_slice(&stratum.to_be_bytes()),
+            Some(ReferenceIdentifier::IPv4Secondary(ip)) => {
+                bytes[12..16].copy_from_slice(&ip.octets())
+            }
+            Some(ReferenceIdentifier::IPv6AndOSISecondary(ip_osi)) => {
+                bytes[12..16].copy_from_slice(&ip_osi.to_be_bytes())
+            }
+            Some(ReferenceIdentifier::UnknownIpVersion(ip)) => {
+                bytes[12..16].copy_from_slice(&ip.to_be_bytes())
+            }
+            Some(ReferenceIdentifier::ReservedStratum(stratum)) => {
+                bytes[12..16].copy_from_slice(&stratum.to_be_bytes())
+            }
             None => bytes[12..16].copy_from_slice(&[0; 4]),
         };
-
 
         let reference_timestamp: &[u8; 8] = &match self.reference_timestamp {
             Some(ts) => ts.to_bytes(),
@@ -268,35 +303,22 @@ impl NtpMessage {
         bytes
     }
 
-    pub fn new_server_response(
-        leap_indicator: LeapIndicator,
-        version_number: VersionNumber,
-        stratum: Stratum,
-        poll_interval: u8,
-        precision: i8,
-        root_delay: i32,
-        root_dispersion: u32,
-        reference_identifier: ReferenceIdentifier,
-        reference_timestamp: NtpTimestamp,
-        originate_timestamp: Option<NtpTimestamp>,
-        receive_timestamp: NtpTimestamp,
-        transmit_timestamp: Option<NtpTimestamp>,
-    ) -> Self {
+    pub fn new_server_response(res: NtpServerResponse) -> Self {
         NtpMessage {
-            li: leap_indicator,
-            vn: version_number,
+            li: res.leap_indicator,
+            vn: res.version_number,
             mode: Mode::Server,
-            stratum,
-            poll_interval,
-            precision,
-            root_delay,
-            root_dispersion,
-            reference_identifier: Some(reference_identifier),
-            reference_timestamp: Some(reference_timestamp),
+            stratum: res.stratum,
+            poll_interval: res.poll_interval,
+            precision: res.precision,
+            root_delay: res.root_delay,
+            root_dispersion: res.root_dispersion,
+            reference_identifier: Some(res.reference_identifier),
+            reference_timestamp: Some(res.reference_timestamp),
             // reference_timestamp: None,
-            originate_timestamp,
-            receive_timestamp: Some(receive_timestamp),
-            transmit_timestamp: match transmit_timestamp {
+            originate_timestamp: res.originate_timestamp,
+            receive_timestamp: Some(res.receive_timestamp),
+            transmit_timestamp: match res.transmit_timestamp {
                 Some(ts) => ts,
                 None => NtpTimestamp(Utc::now()),
             },
@@ -339,7 +361,9 @@ impl TryFrom<&mut BytesMut> for NtpMessage {
                 Some(match stratum {
                     Stratum::KissODeathMessage => {
                         let as_string = str::from_utf8(slice.as_ref())?;
-                        trace!("Reference identifier as utf8 string: {as_string:?}. Mode: {mode:?}");
+                        trace!(
+                            "Reference identifier as utf8 string: {as_string:?}. Mode: {mode:?}"
+                        );
                         let kod_identifier = match KissODeathIdentifier::from_str(as_string) {
                             Ok(rs) => rs,
                             Err(_) => bail!("Invalid Kiss-O-Death Identifier"),
@@ -349,7 +373,9 @@ impl TryFrom<&mut BytesMut> for NtpMessage {
                     }
                     Stratum::PrimaryReference => {
                         let as_string = str::from_utf8(slice.as_ref())?;
-                        trace!("Reference identifier as utf8 string: {as_string:?}. Mode: {mode:?}");
+                        trace!(
+                            "Reference identifier as utf8 string: {as_string:?}. Mode: {mode:?}"
+                        );
                         let reference_source = match ExternalReferenceSource::from_str(as_string) {
                             Ok(rs) => Some(rs),
                             Err(_) => None,
@@ -357,15 +383,18 @@ impl TryFrom<&mut BytesMut> for NtpMessage {
                         trace!("Reference source: {reference_source:?}");
                         ReferenceIdentifier::Primary(reference_source)
                     }
-                    Stratum::SecondaryReference => ReferenceIdentifier::UnknownIpVersion(slice.get_u32()),
+                    Stratum::SecondaryReference => {
+                        ReferenceIdentifier::UnknownIpVersion(slice.get_u32())
+                    }
                     Stratum::Reserved => ReferenceIdentifier::ReservedStratum(slice.get_u32()),
                 })
             }
         };
-        let reference_timestamp: Option<NtpTimestamp> = match NtpTimestamp::try_from(&mut value.split_to(8)) {
-            Ok(ts) => Some(ts),
-            Err(_) => None,
-        };
+        let reference_timestamp: Option<NtpTimestamp> =
+            match NtpTimestamp::try_from(&mut value.split_to(8)) {
+                Ok(ts) => Some(ts),
+                Err(_) => None,
+            };
         let originate_timestamp = match NtpTimestamp::try_from(&mut value.split_to(8)) {
             Ok(ts) => Some(ts),
             Err(_) => None,
@@ -379,22 +408,20 @@ impl TryFrom<&mut BytesMut> for NtpMessage {
             Err(_) => bail!("Unable to parse transmit timestamp"),
         };
 
-        Ok(
-            NtpMessage {
-                li,
-                vn,
-                mode,
-                stratum,
-                poll_interval,
-                precision,
-                root_delay,
-                root_dispersion,
-                reference_identifier,
-                reference_timestamp,
-                originate_timestamp,
-                receive_timestamp,
-                transmit_timestamp,
-            }
-        )
+        Ok(NtpMessage {
+            li,
+            vn,
+            mode,
+            stratum,
+            poll_interval,
+            precision,
+            root_delay,
+            root_dispersion,
+            reference_identifier,
+            reference_timestamp,
+            originate_timestamp,
+            receive_timestamp,
+            transmit_timestamp,
+        })
     }
 }
