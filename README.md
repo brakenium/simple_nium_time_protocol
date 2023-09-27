@@ -9,8 +9,8 @@ The Windows 10 NTP client can use this server just finegh
 
 This project uses the Rust programming language. You will need to install the tooling using Rustup
 which can be installed from [rustup.rs](https://rustup.rs/) or your system package manager.
-The Rust version used to run the program is `1.72.0`. Any version before might work fine too. Any version 
-later will more than likely still work.
+The Rust version which this was tested on is `1.72.0`. Most other relatively recent versions should
+work fine too.
 
 ## Usage
 
@@ -33,7 +33,7 @@ cargo b --release && sudo ./target/release/simple_nium_time_protocol
 
 Query the time-server and display dispersion and offset time
 ```cmd
-w32tm /stripchart /computer:172.26.131.30
+w32tm /stripchart /computer:<server IP>
 ```
 
 Set upstream time server
