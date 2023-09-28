@@ -207,18 +207,18 @@ pub struct NtpMessage {
 
 #[derive(Debug)]
 pub struct NtpServerResponse {
-    leap_indicator: LeapIndicator,
-    version_number: VersionNumber,
-    stratum: Stratum,
-    poll_interval: u8,
-    precision: i8,
-    root_delay: i32,
-    root_dispersion: u32,
-    reference_identifier: ReferenceIdentifier,
-    reference_timestamp: NtpTimestamp,
-    originate_timestamp: Option<NtpTimestamp>,
-    receive_timestamp: NtpTimestamp,
-    transmit_timestamp: Option<NtpTimestamp>,
+    pub leap_indicator: LeapIndicator,
+    pub version_number: VersionNumber,
+    pub stratum: Stratum,
+    pub poll_interval: u8,
+    pub precision: i8,
+    pub root_delay: i32,
+    pub root_dispersion: u32,
+    pub reference_identifier: ReferenceIdentifier,
+    pub reference_timestamp: NtpTimestamp,
+    pub originate_timestamp: Option<NtpTimestamp>,
+    pub receive_timestamp: NtpTimestamp,
+    pub transmit_timestamp: Option<NtpTimestamp>,
 }
 
 fn pad_int(mut integer: isize, expected_digits: i32) -> isize {

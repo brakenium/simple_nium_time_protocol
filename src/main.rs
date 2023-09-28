@@ -1,9 +1,6 @@
 mod ntp_packet;
 
-use crate::ntp_packet::{
-    ExternalReferenceSource, LeapIndicator, NtpMessage, NtpTimestamp, ReferenceIdentifier,
-    Stratum, VersionNumber,
-};
+use crate::ntp_packet::{ExternalReferenceSource, LeapIndicator, NtpMessage, NtpServerResponse, NtpTimestamp, ReferenceIdentifier, Stratum, VersionNumber};
 use bytes::BytesMut;
 use chrono::{TimeZone, Utc};
 use std::net::SocketAddr;
@@ -53,23 +50,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
                 // Some example alternate settings to mess around are defined below the value it
                 // belongs to. To change it, comment the value out and uncomment the value below it.
-                let response = NtpMessage::new_server_response(
-                    LeapIndicator::NoWarning,
-                    packet.vn,
-                    Stratum::PrimaryReference,
-                    4,
-                    -6,
-                    0,
-                    0,
-                    ReferenceIdentifier::Primary(Some(ExternalReferenceSource::GPS)),
-                    NtpTimestamp(Utc::now()),
+                let server_response = NtpServerResponse {
+                    leap_indicator: LeapIndicator::NoWarning,
+                    version_number: packet.vn,
+                    stratum: Stratum::PrimaryReference,
+                    poll_interval: 4,
+                    precision: -6,
+                    root_delay: 0,
+                    root_dispersion: 0,
+                    reference_identifier: ReferenceIdentifier::Primary(Some(ExternalReferenceSource::GPS)),
+                    reference_timestamp: NtpTimestamp(Utc::now()),
                     // NtpTimestamp(Utc::now() - Duration::hours(6) - Duration::seconds(3)),
-                    Some(packet.transmit_timestamp),
-                    NtpTimestamp(receive_timestamp),
+                    originate_timestamp: Some(packet.transmit_timestamp),
+                    receive_timestamp: NtpTimestamp(receive_timestamp),
                     // NtpTimestamp(receive_timestamp - Duration::hours(6)),
-                    Some(NtpTimestamp(Utc::now())),
+                    transmit_timestamp: Some(NtpTimestamp(Utc::now())),
                     // Some(NtpTimestamp(Utc::now() - Duration::hours(6))),
-                );
+                };
+                let response = NtpMessage::new_server_response(server_response);
 
                 // The code below can be used to create a response that doesn't abide by a server's
                 // rules
