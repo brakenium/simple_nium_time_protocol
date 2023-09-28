@@ -1,8 +1,8 @@
 mod ntp_packet;
 
-use crate::ntp_packet::{ExternalReferenceSource, LeapIndicator, NtpMessage, NtpServerResponse, NtpTimestamp, ReferenceIdentifier, Stratum, VersionNumber};
+use crate::ntp_packet::{ExternalReferenceSource, LeapIndicator, NtpMessage, NtpServerResponse, NtpTimestamp, ReferenceIdentifier, Stratum};
 use bytes::BytesMut;
-use chrono::{TimeZone, Utc};
+use chrono::{Utc};
 use std::net::SocketAddr;
 use tokio::net::UdpSocket;
 use tracing::{debug, error, info, trace, Level};
