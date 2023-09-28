@@ -1,3 +1,6 @@
+#![allow(dead_code)]
+#![allow(clippy::upper_case_acronyms)]
+
 mod ntp_packet;
 
 use crate::ntp_packet::{ExternalReferenceSource, LeapIndicator, NtpMessage, NtpServerResponse, NtpTimestamp, ReferenceIdentifier, Stratum};

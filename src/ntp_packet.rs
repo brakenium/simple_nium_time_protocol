@@ -8,7 +8,7 @@ use strum::{AsRefStr, EnumString, FromRepr};
 use thiserror::Error;
 use tracing::trace;
 
-#[derive(FromRepr, Debug)]
+#[derive(FromRepr, Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum LeapIndicator {
     NoWarning = 0,
@@ -17,7 +17,7 @@ pub enum LeapIndicator {
     AlarmConditionClockNotSynchronised = 3,
 }
 
-#[derive(FromRepr, Debug)]
+#[derive(FromRepr, Copy, Clone, Debug)]
 #[repr(u8)]
 pub enum VersionNumber {
     One = 1,
@@ -26,7 +26,7 @@ pub enum VersionNumber {
     Four = 4,
 }
 
-#[derive(FromRepr, PartialEq, Debug)]
+#[derive(FromRepr, Copy, Clone, PartialEq, Debug)]
 #[repr(u8)]
 pub enum Mode {
     Reserved = 0,
@@ -39,7 +39,7 @@ pub enum Mode {
     ReservedForPrivateUse = 7,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 pub enum Stratum {
     KissODeathMessage = 0,
@@ -231,7 +231,7 @@ fn pad_int(mut integer: isize, expected_digits: i32) -> isize {
 }
 
 impl NtpMessage {
-    pub fn to_bytes(self) -> [u8; 48] {
+    pub fn to_bytes(&self) -> [u8; 48] {
         let mut bytes = [0; 48];
         let flags = (self.li as u8) << 6 | (self.vn as u8) << 3 | (self.mode as u8);
         bytes[0] = flags;
@@ -251,7 +251,7 @@ impl NtpMessage {
         let root_dispersion = self.root_dispersion;
         bytes[8..12].copy_from_slice(&root_dispersion.to_be_bytes());
 
-        match self.reference_identifier {
+        match &self.reference_identifier {
             Some(ReferenceIdentifier::KissODeath(kod)) => {
                 bytes[12..16].copy_from_slice(kod.as_ref().as_bytes())
             }
@@ -276,19 +276,19 @@ impl NtpMessage {
             None => bytes[12..16].copy_from_slice(&[0; 4]),
         };
 
-        let reference_timestamp: &[u8; 8] = &match self.reference_timestamp {
+        let reference_timestamp: &[u8; 8] = &match &self.reference_timestamp {
             Some(ts) => ts.to_bytes(),
             None => [0; 8],
         };
         bytes[16..24].copy_from_slice(reference_timestamp);
 
-        let originate_timestamp: &[u8; 8] = &match self.originate_timestamp {
+        let originate_timestamp: &[u8; 8] = &match &self.originate_timestamp {
             Some(ts) => ts.to_bytes(),
             None => [0; 8],
         };
         bytes[24..32].copy_from_slice(originate_timestamp);
 
-        let receive_timestamp: &[u8; 8] = &match self.receive_timestamp {
+        let receive_timestamp: &[u8; 8] = &match &self.receive_timestamp {
             Some(ts) => ts.to_bytes(),
             None => [0; 8],
         };
