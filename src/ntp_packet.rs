@@ -1,6 +1,6 @@
 use anyhow::bail;
 use bytes::{Buf, BytesMut};
-use chrono::{DateTime, Duration, LocalResult, TimeZone, Utc};
+use chrono::{DateTime, Duration, LocalResult, NaiveDateTime, TimeZone, Utc};
 use std::net::Ipv4Addr;
 use std::str;
 use std::str::FromStr;
@@ -114,16 +114,15 @@ pub enum ReferenceIdentifier {
     ReservedStratum(u32),
 }
 
+
 #[derive(Debug)]
-pub struct NtpTimestamp(pub DateTime<Utc>);
+pub struct NtpTimestamp(pub NaiveDateTime);
 
 #[derive(Error, Debug)]
 pub enum NtpTimestampError {
     #[error("Supplied timestamp is zero")]
     Zero,
-    #[error("Ambiguous timestamp, can occur when negative timezone transition happens")]
-    Ambiguous,
-    #[error("Invalid timestamp, can occur when positive timezone transition happens")]
+    #[error("Supplied timestamp is invalid")]
     Invalid,
 }
 
@@ -136,13 +135,16 @@ impl TryFrom<&mut BytesMut> for NtpTimestamp {
         let fraction = value.split_to(4).get_u32();
         let nano_seconds = pad_int(fraction as isize, 9);
 
+        trace!("Seconds: {}, fraction: {}, nanoseconds: {}", seconds, fraction, nano_seconds);
+
         if seconds == 0 && nano_seconds == 0 {
             return Err(NtpTimestampError::Zero);
         }
 
-        let seconds_unix_format = seconds - Duration::days(25567).num_seconds();
+        // Might be wrong
+        let seconds_unix_format = seconds - 2208988800;
 
-        let timestamp = Utc.timestamp_opt(seconds_unix_format, nano_seconds as u32);
+        let timestamp = NaiveDateTime::from_timestamp_opt(seconds_unix_format, nano_seconds as u32);
 
         trace!(
             "Seconds_unix: {}, seconds_fraction: {} Timestamp: {:?}",
@@ -152,20 +154,20 @@ impl TryFrom<&mut BytesMut> for NtpTimestamp {
         );
 
         match timestamp {
-            LocalResult::Single(timestamp) => Ok(NtpTimestamp(timestamp)),
-            LocalResult::Ambiguous(t1, t2) => {
-                trace!("T1: {t1:?} T2: {t2:?}");
-                Err(NtpTimestampError::Ambiguous)
+            Some(ts) => Ok(NtpTimestamp(ts)),
+            None => {
+                Err(NtpTimestampError::Invalid)
             }
-            LocalResult::None => Err(NtpTimestampError::Invalid),
         }
     }
 }
 
 impl NtpTimestamp {
     fn to_bytes(&self) -> [u8; 8] {
-        let timestamp: u32 = (self.0.timestamp() + Duration::days(25567).num_seconds()) as u32;
+        let timestamp: u32 = (self.0.timestamp() + 2208988800) as u32;
         let fraction = self.0.timestamp_subsec_nanos();
+
+        trace!("Timestamp: {:?} Fraction: {:?}", timestamp, fraction);
 
         let mut timestamp_bytes = [0; 4];
         let mut fraction_bytes = [0; 4];
@@ -320,7 +322,7 @@ impl NtpMessage {
             receive_timestamp: Some(res.receive_timestamp),
             transmit_timestamp: match res.transmit_timestamp {
                 Some(ts) => ts,
-                None => NtpTimestamp(Utc::now()),
+                None => NtpTimestamp(Utc::now().naive_utc()),
             },
         }
     }
