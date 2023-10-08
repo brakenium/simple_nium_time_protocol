@@ -192,18 +192,34 @@ impl NtpTimestamp {
 
 #[derive(Debug)]
 pub struct NtpMessage {
+    // Warn of leap seconds to be inserted or deleted in the last minute of the current day
     pub li: LeapIndicator,
+    // NTP version
     pub vn: VersionNumber,
+    // Mode of operation: client, server, broadcast, etc.
     pub mode: Mode,
+    // For the server to notify to the client the following:
+    // If it is synchronised with a high accuracy clock, radio receiver, GPS, etc.
+    // If it is synchronised via NTP or SNTP
+    // If the client should stop sending requests
     pub stratum: Stratum,
+    // Tells the client how long it can wait before a new request. From 16s to 36h
     pub poll_interval: u8,
+    // How precise the server's clock is
     pub precision: i8,
+    // Total time from the server to its reference clock
     pub root_delay: i32,
+    // How precise the resulting time is
     pub root_dispersion: u32,
+    // Where the server gets its time from
     pub reference_identifier: Option<ReferenceIdentifier>,
+    // When the system's clock was last updated
     pub reference_timestamp: Option<NtpTimestamp>,
+    // Time at which client sent its request
     pub originate_timestamp: Option<NtpTimestamp>,
+    // Time at which the server received the request
     pub receive_timestamp: Option<NtpTimestamp>,
+    // Time at which the packet was sent
     pub transmit_timestamp: NtpTimestamp,
 }
 
