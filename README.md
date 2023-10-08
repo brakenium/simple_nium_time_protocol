@@ -45,3 +45,12 @@ Show current configuration of localhost
 ```cmd
 w32tm /query /computer:localhost /configuration
 ```
+
+## Presentation
+
+In order to build the presentation from the markdown source you will need pandoc. On arch running
+`pacman -S pandoc` should be enough. You can then run the following command to build the presentation:
+
+```bash
+pandoc PRESENTATION.md -o PRESENTATION.html --embed-resources --standalone -t slidy
+```
