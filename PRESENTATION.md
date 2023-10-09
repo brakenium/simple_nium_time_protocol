@@ -6,7 +6,7 @@
 
 - SNTP server
 - Rust
-- RFC 4330
+- [RFC 4330](https://tools.ietf.org/html/rfc4330)
 - [https://github.com/brakenium/simple_nium_time_protocol/](https://github.com/brakenium/simple_nium_time_protocol/)
 
 ::: notes
@@ -213,5 +213,6 @@ Adjust some return values and show how this affects the time on the client while
 
 Source code: [https://github.com/brakenium/simple_nium_time_protocol/](https://github.com/brakenium/simple_nium_time_protocol/)
 
-- Server and responses only 100 line of code
+- Server and responses only 100 lines of code
 - Packet parsing is 445 lines of code
+- Presentation as markdown and html
