@@ -23,6 +23,7 @@ thing. I also wanted to learn some new things which I will talk about later.
 # My goals
 
 - I wanted to learn how to implement an RFC
+  - RFC?
 - Do a more "serious" and larger project
 - Further my knowledge of Rust
 - Learn how to use UDP or TCP sockets
@@ -165,6 +166,15 @@ Set the Windows timeserver to this server and show that the time is synchronized
 ## Demo 3
 
 Adjust some return values and show how this affects the time on the client while inspecting the packets in Wireshark.
+
+------------------
+
+# Code
+
+- Server
+  - Socket handling
+  - Response
+- Packet parsing
 
 ------------------
 
